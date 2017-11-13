@@ -1,0 +1,5 @@
+*.sw?
+*.tar.xz
+.flatpak-builder
+*~
+Makefile
