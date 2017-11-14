@@ -30,7 +30,10 @@
 #ifndef __CLIPPY_BOARD_H__
 #define __CLIPPY_BOARD_H__
 
+#include <glib.h>
 #include <glib-object.h>
+#include <gtk/gtk.h>
+#include <gtk/gtkclipboard.h>
 
 G_BEGIN_DECLS
 

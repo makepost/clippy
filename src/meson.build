@@ -1,4 +1,25 @@
-gnome = import('gnome')
+src_res = gnome.compile_resources('org.gnome.Clippy.src',
+  'org.gnome.Clippy.src.gresource.xml',
+  gresource_bundle: true,
+  install: true,
+  install_dir: pkgdatadir,
+)
+
+bin_conf = configuration_data()
+bin_conf.set('GJS', find_program('gjs').path())
+bin_conf.set('PACKAGE_VERSION', meson.project_version())
+bin_conf.set('PACKAGE_NAME', meson.project_name())
+bin_conf.set('prefix', get_option('prefix'))
+bin_conf.set('libdir', join_paths(get_option('prefix'), get_option('libdir')))
+bin_conf.set('datadir', join_paths(get_option('prefix'), get_option('datadir')))
+
+configure_file(
+  input: 'org.gnome.Clippy.in',
+  output: 'org.gnome.Clippy',
+  configuration: bin_conf,
+  install: true,
+  install_dir: get_option('bindir')
+)
 
 libsources = [
   'lib/clippy-board.c',
@@ -10,7 +31,7 @@ libargs = [
   '-DG_LOG_DOMAIN="Clippy"'
 ]
 libclippy = shared_library('clippy-1.0', libsources,
-  dependencies: [gio, gtk3],
+  dependencies: [gtk3],
   c_args: libargs,
   install: true,
   install_dir: pkglibdir
@@ -22,7 +43,7 @@ gnome.generate_gir(libclippy,
   namespace: 'Clippy',
   symbol_prefix: 'clippy',
   identifier_prefix: 'Clippy',
-  includes: ['Gio-2.0', 'Gtk-3.0'],
+  includes: ['Gtk-3.0'],
   extra_args: '--quiet',
   install_dir_gir: girdir,
   install_dir_typelib: typelibdir,

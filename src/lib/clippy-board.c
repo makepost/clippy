@@ -27,8 +27,6 @@
  * authorization.
  */
 
-#include <glib.h>
-
 #include "clippy-board.h"
 
 typedef struct _ClippyBoardPrivate ClippyBoardPrivate;
@@ -44,7 +42,7 @@ struct _ClippyBoardPrivate {
 
   gint n;
 
-  GtkTargetList *targets;
+  GtkTargetEntry *targets;
 
   gchar **texts;
 };
@@ -63,13 +61,33 @@ static GParamSpec *props[LAST_PROP];
 G_DEFINE_TYPE_WITH_PRIVATE (ClippyBoard, clippy_board, G_TYPE_OBJECT)
 
 
+static void
+targets_get_func (GtkClipboard     *clipboard,
+                  GtkSelectionData *selection_data,
+                  guint             info,
+                  gpointer          data)
+{
+  ClippyBoardPrivate *priv = CLIPPY_BOARD (data)->priv;
+  gint i;
+
+  for (i = 0; i < priv->n; i++) {
+    if (
+      gdk_atom_intern_static_string(priv->targets[i].target) ==
+      gtk_selection_data_get_target (selection_data)
+    ) {
+      gtk_selection_data_set_text (selection_data, priv->texts[i], -1);
+      break;
+    }
+  }
+}
+
 /**
  * clippy_board_set_targets:
  * @board:     a #ClippyBoard object
- * @targets:   (array length=n_targets) array containing information
+ * @targets:   (array length=n_targets): array containing information
  *     about the available forms for the clipboard data
  * @n_targets: number of elements in @targets
- * @texts:     (array length=n_texts) UTF-8 strings
+ * @texts:     (array length=n_texts): UTF-8 strings
  * @n_texts:   number of elements in @targets, must be equal to n_targets
  *
  * Sets the contents of the clipboard to the given UTF-8 strings, each
@@ -82,54 +100,37 @@ clippy_board_set_targets (ClippyBoard  *board,
                           gchar       **texts,
                           gint          n_texts)
 {
+  gint i;
+  GtkTargetList *target_list;
+
   g_return_if_fail (CLIPPY_IS_BOARD (board));
   g_return_if_fail (n_targets == n_texts);
 
   ClippyBoardPrivate *priv = board->priv;
 
   priv->texts = g_strdupv (texts);
-  priv->targets = gtk_target_list_new (NULL, 0);
+  target_list = gtk_target_list_new (NULL, 0);
 
   for (i = 0; i < n_targets; i++) {
-    gtk_target_list_add (priv->targets,
-                         gtk_atom_intern_static_string(targets[i]), 0, 0);
+    gtk_target_list_add (target_list,
+                         gdk_atom_intern_static_string(targets[i]), 0, 0);
   }
 
-  table_targets = gtk_target_table_new_from_list (priv->targets,
+  priv->targets = gtk_target_table_new_from_list (target_list,
                                                   &priv->n);
 
   gtk_clipboard_set_with_data (priv->clipboard,
-                               table_targets, n_targets,
-                               targets_get_func, null,
+                               priv->targets, n_targets,
+                               targets_get_func, NULL,
                                board);
   gtk_clipboard_set_can_store (priv->clipboard, NULL, 0);
 
-  gtk_target_table_free (table_targets, n_targets);
-}
-
-static void
-targets_get_func (GtkClipboard     *clipboard,
-                  GtkSelectionData *selection_data,
-                  guint             info,
-                  gpointer          data)
-{
-  ClippyBoardPrivate *priv = CLIPPY_BOARD (data)->priv;
-  GList *l;
-  gint i = 0;
-
-  for (l = priv->targets; l != NULL; l = l->next) {
-    if (GDK_ATOM (l->data) == selection_data->get_target()) {
-      gtk_selection_data_set_text (selection_data, priv->texts[i], -1);
-      break;
-    }
-
-    i++;
-  }
+  gtk_target_list_unref (target_list);
 }
 
 static void
 clippy_board_set_clipboard (ClippyBoard  *board,
-                            gchar        *clipboard)
+                            const gchar  *clipboard)
 {
   ClippyBoardPrivate *priv;
 
@@ -137,7 +138,7 @@ clippy_board_set_clipboard (ClippyBoard  *board,
 
   priv = board->priv;
 
-  if (g_set_object (&priv->clipboard, gtk_clipboard_get (gtk_atom_intern_static_string (clipboard, 0, 0))))
+  if (g_set_object (&priv->clipboard, gtk_clipboard_get (gdk_atom_intern_static_string (clipboard))))
     g_object_notify_by_pspec (G_OBJECT (board), props[PROP_CLIPBOARD]);
 }
 
@@ -147,8 +148,6 @@ clippy_board_get_property (GObject    *object,
                            GValue     *value,
                            GParamSpec *pspec)
 {
-  ClippyBoardPrivate *priv = CLIPPY_BOARD (object)->priv;
-
   switch (prop_id)
     {
     default:
@@ -193,7 +192,7 @@ clippy_board_finalize (GObject *object)
 {
   ClippyBoardPrivate *priv = CLIPPY_BOARD (object)->priv;
 
-  gtk_target_list_unref (priv->list);
+  gtk_target_table_free (priv->targets, priv->n);
   G_OBJECT_CLASS (clippy_board_parent_class)->finalize (object);
 }
 
@@ -212,7 +211,7 @@ clippy_board_class_init (ClippyBoardClass *klass)
                          "Clipboard",
                          "Gtk clipboard name",
                          NULL,
-                         G_PARAM_WRITE | G_PARAM_CONSTRUCT_ONLY);
+                         G_PARAM_WRITABLE | G_PARAM_CONSTRUCT_ONLY);
 
   g_object_class_install_properties (object_class, LAST_PROP, props);
 }
