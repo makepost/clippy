@@ -51,7 +51,9 @@ targets_get_func (GtkClipboard     *clipboard,
 
   for (i = 0; i < contents->n; i++) {
     if (target == gdk_atom_intern_static_string (contents->targets[i].target)) {
-      gtk_selection_data_set_text (selection_data, contents->texts[i], strlen (contents->texts[i]));
+      gtk_selection_data_set (selection_data, target, 8,
+                              (guchar *) contents->texts[i],
+                              strlen (contents->texts[i]));
       break;
     }
   }

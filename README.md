@@ -10,9 +10,9 @@ Store multiple UTF-8 strings with different targets in GtkClipboard from Gjs.
 
 ## Todo
 
-- [ ] Paste text given a target
+- [x] Paste text given a target
 
-- [ ] Gjs demo
+- [x] Gjs demo
 
 - [ ] Review, find possible memory leaks
 
