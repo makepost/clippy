@@ -67,18 +67,27 @@ targets_get_func (GtkClipboard     *clipboard,
                   guint             info,
                   gpointer          data)
 {
-  ClippyBoardPrivate *priv = CLIPPY_BOARD (data)->priv;
   gint i;
+  ClippyBoardPrivate *priv = CLIPPY_BOARD (data)->priv;
+  GdkAtom target = gtk_selection_data_get_target (selection_data);
 
   for (i = 0; i < priv->n; i++) {
-    if (
-      gdk_atom_intern_static_string(priv->targets[i].target) ==
-      gtk_selection_data_get_target (selection_data)
-    ) {
-      gtk_selection_data_set_text (selection_data, priv->texts[i], -1);
+    if (target == gdk_atom_intern_static_string (priv->targets[i].target)) {
+      gtk_selection_data_set_text (selection_data, priv->texts[i], strlen (priv->texts[i]));
       break;
     }
   }
+}
+
+static void
+targets_clear_func (GtkClipboard *clipboard,
+                    gpointer      data)
+{
+  ClippyBoardPrivate *priv = CLIPPY_BOARD (data)->priv;
+
+  gtk_target_table_free (priv->targets, priv->n);
+  g_strfreev(priv->texts);
+  priv->n = 0;
 }
 
 /**
@@ -108,12 +117,14 @@ clippy_board_set_targets (ClippyBoard  *board,
 
   ClippyBoardPrivate *priv = board->priv;
 
+  targets_clear_func(priv->clipboard, board);
+
   priv->texts = g_strdupv (texts);
   target_list = gtk_target_list_new (NULL, 0);
 
   for (i = 0; i < n_targets; i++) {
     gtk_target_list_add (target_list,
-                         gdk_atom_intern_static_string(targets[i]), 0, 0);
+                         gdk_atom_intern_static_string (targets[i]), 0, 0);
   }
 
   priv->targets = gtk_target_table_new_from_list (target_list,
@@ -128,9 +139,39 @@ clippy_board_set_targets (ClippyBoard  *board,
   gtk_target_list_unref (target_list);
 }
 
+/**
+ * clippy_board_request_target:
+ * @board: a #ClippyBoard
+ * @target:   information about the form into which the clipboard
+ *     owner should convert the selection
+ * @callback: (scope async): A function to call when the results are received
+ *     (or the retrieval fails). If the retrieval fails the length field of
+ *     @selection_data will be negative.
+ * @user_data: user data to pass to @callback
+ *
+ * Requests the contents of clipboard as the given target.
+ * When the results of the result are later received the supplied callback
+ * will be called.
+ **/
+void
+clippy_board_request_target (ClippyBoard              *board,
+                             const gchar              *target,
+                             GtkClipboardReceivedFunc  callback,
+                             gpointer                  user_data)
+{
+  ClippyBoardPrivate *priv;
+
+  g_return_if_fail (board != NULL);
+  g_return_if_fail (callback != NULL);
+
+  priv = CLIPPY_BOARD (board)->priv;
+  gtk_clipboard_request_contents (priv->clipboard, gdk_atom_intern_static_string (target),
+                                  callback, user_data);
+}
+
 static void
-clippy_board_set_clipboard (ClippyBoard  *board,
-                            const gchar  *clipboard)
+clippy_board_set_clipboard (ClippyBoard *board,
+                            const gchar *clipboard)
 {
   ClippyBoardPrivate *priv;
 
@@ -183,6 +224,7 @@ clippy_board_dispose (GObject *object)
 {
   ClippyBoardPrivate *priv = CLIPPY_BOARD (object)->priv;
 
+  targets_clear_func(priv->clipboard, object);
   g_clear_object (&priv->clipboard);
   G_OBJECT_CLASS (clippy_board_parent_class)->dispose (object);
 }
@@ -192,7 +234,7 @@ clippy_board_finalize (GObject *object)
 {
   ClippyBoardPrivate *priv = CLIPPY_BOARD (object)->priv;
 
-  gtk_target_table_free (priv->targets, priv->n);
+  targets_clear_func(priv->clipboard, object);
   G_OBJECT_CLASS (clippy_board_parent_class)->finalize (object);
 }
 

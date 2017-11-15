@@ -34,6 +34,7 @@
 #include <glib-object.h>
 #include <gtk/gtk.h>
 #include <gtk/gtkclipboard.h>
+#include <string.h>
 
 G_BEGIN_DECLS
 
@@ -45,6 +46,11 @@ void clippy_board_set_targets (ClippyBoard *board,
                                gint n_targets,
                                gchar **texts,
                                gint n_texts);
+
+void clippy_board_request_target (ClippyBoard              *board,
+                                  const gchar              *target,
+                                  GtkClipboardReceivedFunc  callback,
+                                  gpointer                  user_data);
 
 G_END_DECLS
 

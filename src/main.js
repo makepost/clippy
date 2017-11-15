@@ -27,6 +27,7 @@
  * authorization.
  */
 
+const Gdk = imports.gi.Gdk;
 const GLib = imports.gi.GLib;
 const GObject = imports.gi.GObject;
 const Gtk = imports.gi.Gtk;
@@ -36,26 +37,77 @@ class DemoWindow extends Gtk.ApplicationWindow {
     _init(params) {
         super._init(params);
         const board = new imports.gi.Clippy.Board({ clipboard: 'CLIPBOARD' });
+        const clipboard = Gtk.Clipboard.get_default(Gdk.Display.get_default());
+        const spacing = 1;
 
-        const box = new Gtk.VBox();
-        this.add(box);
+        const grid = new Gtk.Grid({
+          column_spacing: spacing,
+          row_spacing: spacing
+        });
+        this.add(grid);
 
         const fileChooserWidget = new Gtk.FileChooserWidget({
           action: Gtk.FileChooserAction.OPEN,
           expand: true,
           select_multiple: true
         });
-        box.add(fileChooserWidget);
+        grid.attach(fileChooserWidget, 0, 0, 1, 1);
 
-        const button = new Gtk.Button({ label: 'Copy to clipboard' });
-        box.add(button);
-        button.connect('clicked', () => {
+        const fileChooserActions = new Gtk.HBox();
+        grid.attach(fileChooserActions, 0, 1, 1, 1);
+
+        const copy = new Gtk.Button({ label: 'Copy' });
+        fileChooserActions.add(copy);
+        copy.connect('clicked', () => {
             const uris = fileChooserWidget.get_uris().join('\n');
 
             board.set_targets(
               ['x-special/gnome-copied-files', 'text/uri-list', 'text/plain;charset=utf-8'],
               ['copy\n' + uris, uris, uris]
             );
+        });
+
+        const cut = new Gtk.Button({ label: 'Cut' });
+        fileChooserActions.add(cut);
+        cut.connect('clicked', () => {
+            const uris = fileChooserWidget.get_uris().join('\n');
+
+            board.set_targets(
+              ['x-special/gnome-copied-files', 'text/uri-list', 'text/plain;charset=utf-8'],
+              ['cut\n' + uris, uris, uris]
+            );
+        });
+
+        const textView = new Gtk.TextView();
+        grid.attach(textView, 1, 0, 1, 1);
+        const buffer = textView.get_buffer();
+
+        const clipboardContentActions = new Gtk.HBox({ spacing });
+        grid.attach(clipboardContentActions, 1, 1, 1, 1);
+
+        const pasteFiles = new Gtk.Button({ label: 'Paste' });
+        clipboardContentActions.add(pasteFiles);
+        pasteFiles.connect('clicked', () => {
+          board.request_target('x-special/gnome-copied-files', (_, result) => {
+            const data = result.get_data();
+            buffer.text = data ? data.toString() : '';
+          });
+        });
+
+        const pasteUris = new Gtk.Button({ label: 'Uris' });
+        clipboardContentActions.add(pasteUris);
+        pasteUris.connect('clicked', () => {
+          clipboard.request_uris((_, uris) => {
+            buffer.text = JSON.stringify(uris, null, 2);
+          });
+        });
+
+        const pasteText = new Gtk.Button({ label: 'Text' });
+        clipboardContentActions.add(pasteText);
+        pasteText.connect('clicked', () => {
+          clipboard.request_text((_, text) => {
+            buffer.text = text;
+          });
         });
 
         this.show_all();
