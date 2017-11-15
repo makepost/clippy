@@ -27,6 +27,7 @@
  * authorization.
  */
 
+const Clippy = imports.gi.Clippy;
 const Gdk = imports.gi.Gdk;
 const GLib = imports.gi.GLib;
 const GObject = imports.gi.GObject;
@@ -36,8 +37,7 @@ const DemoWindow = GObject.registerClass(
 class DemoWindow extends Gtk.ApplicationWindow {
     _init(params) {
         super._init(params);
-        const board = new imports.gi.Clippy.Board({ clipboard: 'CLIPBOARD' });
-        const clipboard = Gtk.Clipboard.get_default(Gdk.Display.get_default());
+        const clipboard = Clippy.get('CLIPBOARD');
         const spacing = 1;
 
         const grid = new Gtk.Grid({
@@ -61,7 +61,7 @@ class DemoWindow extends Gtk.ApplicationWindow {
         copy.connect('clicked', () => {
             const uris = fileChooserWidget.get_uris().join('\n');
 
-            board.set_targets(
+            Clippy.set_targets(clipboard,
               ['x-special/gnome-copied-files', 'text/uri-list', 'text/plain;charset=utf-8'],
               ['copy\n' + uris, uris, uris]
             );
@@ -72,7 +72,7 @@ class DemoWindow extends Gtk.ApplicationWindow {
         cut.connect('clicked', () => {
             const uris = fileChooserWidget.get_uris().join('\n');
 
-            board.set_targets(
+            Clippy.set_targets(clipboard,
               ['x-special/gnome-copied-files', 'text/uri-list', 'text/plain;charset=utf-8'],
               ['cut\n' + uris, uris, uris]
             );
@@ -88,7 +88,7 @@ class DemoWindow extends Gtk.ApplicationWindow {
         const pasteFiles = new Gtk.Button({ label: 'Paste' });
         clipboardContentActions.add(pasteFiles);
         pasteFiles.connect('clicked', () => {
-          board.request_target('x-special/gnome-copied-files', (_, result) => {
+          Clippy.request_target(clipboard, 'x-special/gnome-copied-files', (_, result) => {
             const data = result.get_data();
             buffer.text = data ? data.toString() : '';
           });

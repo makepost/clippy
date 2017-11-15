@@ -1,4 +1,4 @@
-/* clippy-board.h
+/* clippy.h
  *
  * Copyright (C) 2017 makepost
  *
@@ -27,8 +27,8 @@
  * authorization.
  */
 
-#ifndef __CLIPPY_BOARD_H__
-#define __CLIPPY_BOARD_H__
+#ifndef __CLIPPY_H__
+#define __CLIPPY_H__
 
 #include <glib.h>
 #include <glib-object.h>
@@ -38,21 +38,20 @@
 
 G_BEGIN_DECLS
 
-#define CLIPPY_TYPE_BOARD            (clippy_board_get_type())
-G_DECLARE_FINAL_TYPE (ClippyBoard, clippy_board, CLIPPY, BOARD, GObject)
+void clippy_set_targets (GtkClipboard  *clipboard,
+                         gchar        **targets,
+                         gint           n_targets,
+                         gchar        **texts,
+                         gint           n_texts);
 
-void clippy_board_set_targets (ClippyBoard *board,
-                               gchar **targets,
-                               gint n_targets,
-                               gchar **texts,
-                               gint n_texts);
+void clippy_request_target (GtkClipboard             *clipboard,
+                            const gchar              *target,
+                            GtkClipboardReceivedFunc  callback,
+                            gpointer                  user_data);
 
-void clippy_board_request_target (ClippyBoard              *board,
-                                  const gchar              *target,
-                                  GtkClipboardReceivedFunc  callback,
-                                  gpointer                  user_data);
+GtkClipboard *clippy_get (const gchar *selection);
 
 G_END_DECLS
 
-#endif /* __CLIPPY_BOARD_H__ */
+#endif /* __CLIPPY_H__ */
 

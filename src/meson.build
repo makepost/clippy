@@ -22,8 +22,8 @@ configure_file(
 )
 
 libsources = [
-  'lib/clippy-board.c',
-  'lib/clippy-board.h'
+  'lib/clippy.c',
+  'lib/clippy.h'
 ]
 
 libargs = [
