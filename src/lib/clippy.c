@@ -89,15 +89,14 @@ clippy_set_targets (GtkClipboard  *clipboard,
                     gchar        **texts,
                     gint           n_texts)
 {
+  SetTargetsContents *contents;
   gint i;
   GtkTargetList *target_list;
 
   g_return_if_fail (GTK_IS_CLIPBOARD (clipboard));
   g_return_if_fail (n_targets == n_texts);
 
-  SetTargetsContents *contents = g_new (SetTargetsContents, 1);
-  contents->n = 0;
-
+  contents = g_new (SetTargetsContents, 1);
   contents->texts = g_strdupv (texts);
   target_list = gtk_target_list_new (NULL, 0);
 
