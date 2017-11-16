@@ -90,7 +90,8 @@ class DemoWindow extends Gtk.ApplicationWindow {
         pasteFiles.connect('clicked', () => {
           Clippy.request_target(clipboard, 'x-special/gnome-copied-files', (_, result) => {
             const data = result.get_data();
-            buffer.text = data ? data.toString() : '';
+            const minusOne = GLib.MAXUINT32;
+            buffer.text = data.length === minusOne ? null : data.toString();
           });
         });
 
