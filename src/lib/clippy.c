@@ -50,7 +50,7 @@ targets_get_func (GtkClipboard     *clipboard,
   GdkAtom target = gtk_selection_data_get_target (selection_data);
 
   for (i = 0; i < contents->n; i++) {
-    if (target == gdk_atom_intern_static_string (contents->targets[i].target)) {
+    if (target == gdk_atom_intern (contents->targets[i].target, FALSE)) {
       gtk_selection_data_set (selection_data, target, 8,
                               (guchar *) contents->texts[i],
                               strlen (contents->texts[i]));
@@ -103,7 +103,7 @@ clippy_set_targets (GtkClipboard  *clipboard,
 
   for (i = 0; i < n_targets; i++) {
     gtk_target_list_add (target_list,
-                         gdk_atom_intern_static_string (targets[i]), 0, 0);
+                         gdk_atom_intern (targets[i], FALSE), 0, 0);
   }
 
   contents->targets = gtk_target_table_new_from_list (target_list,
@@ -142,7 +142,7 @@ clippy_request_target (GtkClipboard             *clipboard,
   g_return_if_fail (callback != NULL);
 
   gtk_clipboard_request_contents (clipboard,
-                                  gdk_atom_intern_static_string (target),
+                                  gdk_atom_intern (target, FALSE),
                                   callback, user_data);
 }
 
@@ -161,5 +161,5 @@ clippy_request_target (GtkClipboard             *clipboard,
 GtkClipboard *
 clippy_get (const gchar *selection)
 {
-  return gtk_clipboard_get (gdk_atom_intern_static_string (selection));
+  return gtk_clipboard_get (gdk_atom_intern (selection, FALSE));
 }
